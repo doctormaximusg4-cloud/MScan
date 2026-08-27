@@ -1,0 +1,19 @@
+{
+  "name": "com.mintsog.mscan.magnetometer",
+  "version": "1.0.0",
+  "description": "Raw Android magnetometer bridge for MScan",
+  "cordova": {
+    "id": "com.mintsog.mscan.magnetometer",
+    "platforms": [
+      "android"
+    ]
+  },
+  "keywords": [
+    "cordova",
+    "android",
+    "magnetometer",
+    "sensor",
+    "mscan"
+  ],
+  "license": "MIT"
+}
