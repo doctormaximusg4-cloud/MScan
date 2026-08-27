@@ -1,0 +1,15 @@
+{
+  "name": "mscan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MScan - Magnetic Live Scanner",
+  "cordova": {
+    "platforms": [
+      "android"
+    ],
+    "plugins": {
+      "cordova-plugin-camera-preview": {},
+      "com.mintsog.mscan.magnetometer": {}
+    }
+  }
+}

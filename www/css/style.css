@@ -1,0 +1,29 @@
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:Arial,sans-serif}
+body{touch-action:manipulation}
+#app{position:relative;width:100%;height:100%;background:transparent}
+#overlay{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
+.hud{position:absolute;left:12px;right:12px;z-index:7;background:rgba(2,7,13,.58);border:1px solid rgba(255,255,255,.17);border-radius:15px;padding:11px;backdrop-filter:blur(6px)}
+.top{top:max(12px,env(safe-area-inset-top))}
+.bottom{bottom:max(12px,env(safe-area-inset-bottom))}
+.brandline{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.brand{font-size:20px;font-weight:800;letter-spacing:.5px}
+.brand small{display:block;font-size:9px;font-weight:500;letter-spacing:1.8px;opacity:.78;margin-top:2px}
+.status{font-size:11px;font-weight:800;padding:5px 7px;border-radius:7px;background:rgba(255,255,255,.13)}
+.mainreading{margin-top:8px;font-size:38px;font-weight:800;line-height:1}
+.mainreading small{font-size:12px;font-weight:500}
+.subreading{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;opacity:.92}
+.reticle{position:absolute;z-index:5;left:50%;top:50%;width:92px;height:92px;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+.reticle:before,.reticle:after{content:"";position:absolute;background:#fff}
+.reticle:before{width:28px;height:2px;left:30px;top:44px}
+.reticle:after{width:2px;height:28px;left:44px;top:30px}
+.legend{position:absolute;right:10px;top:42%;z-index:6;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:10px;background:rgba(0,0,0,.43);font-size:10px}
+.gradient{width:17px;height:126px;border-radius:9px;background:linear-gradient(to bottom,#ff1919,#ff9300,#ffe600,#1dca61,#00ccff,#1744ff)}
+.bottom label{display:grid;grid-template-columns:84px 1fr 50px;align-items:center;gap:8px;font-size:12px;margin:5px 0}
+.bottom input{width:100%}
+.bottom output{text-align:right}
+.buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+button{min-height:44px;border:0;border-radius:10px;background:rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:800}
+button.primary{background:#fff;color:#111}
+#message{text-align:center;font-size:11px;opacity:.86;margin:8px 0 0;min-height:14px}
+@media(max-width:390px){.buttons{grid-template-columns:repeat(2,1fr)}.mainreading{font-size:32px}}

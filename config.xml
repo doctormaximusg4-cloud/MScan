@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.mintsog.mscan" version="0.1.0"
+        xmlns="http://www.w3.org/ns/widgets"
+        xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>MScan</name>
+    <description>Magnetic Live Scanner</description>
+    <author>Mintsog</author>
+
+    <content src="index.html" />
+    <access origin="*" />
+    <allow-navigation href="*" />
+
+    <preference name="Orientation" value="portrait" />
+    <preference name="Fullscreen" value="true" />
+    <preference name="AndroidXEnabled" value="true" />
+    <preference name="AndroidEdgeToEdge" value="true" />
+    <preference name="DisallowOverscroll" value="true" />
+
+    <icon density="mdpi" src="res/android/icon/mdpi.png" />
+    <icon density="hdpi" src="res/android/icon/hdpi.png" />
+    <icon density="xhdpi" src="res/android/icon/xhdpi.png" />
+    <icon density="xxhdpi" src="res/android/icon/xxhdpi.png" />
+    <icon density="xxxhdpi" src="res/android/icon/xxxhdpi.png" />
+
+    <plugin name="cordova-plugin-camera-preview"
+            spec="https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git" />
+
+    <plugin name="com.mintsog.mscan.magnetometer"
+            spec="plugins-src/mscan-magnetometer" />
+</widget>

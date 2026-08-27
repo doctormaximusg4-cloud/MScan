@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="com.mintsog.mscan.magnetometer"
+        version="1.0.0">
+    <name>MScanMagnetometer</name>
+    <description>Raw Android magnetometer bridge for MScan</description>
+    <license>MIT</license>
+
+    <js-module src="www/mscan-magnetometer.js" name="MScanMagnetometer">
+        <clobbers target="MScanMagnetometer" />
+    </js-module>
+
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="MScanMagnetometer">
+                <param name="android-package" value="com.mintsog.mscan.MScanMagnetometer" />
+            </feature>
+        </config-file>
+        <source-file src="src/android/MScanMagnetometer.java"
+                     target-dir="app/src/main/java/com/mintsog/mscan" />
+    </platform>
+</plugin>
