@@ -160,7 +160,7 @@ function magneticColor(
    LIVE MAGNETIC BLOB
 ========================================================= */
 
-clear(delta) {
+function drawLiveBlob(delta) {
 
   /*
      Fade παλιών σημείων
