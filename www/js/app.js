@@ -15,6 +15,15 @@ let frozen = false;
 let sensitivity = 10;
 let smoothing = 0.65;
 
+let anomalyState = 'NORMAL';
+let anomalyCounter = 0;
+let normalCounter = 0;
+
+const POSSIBLE_THRESHOLD = 3.0;
+const ANOMALY_THRESHOLD = 8.0;
+
+const ANOMALY_CONFIRM_COUNT = 10;
+const NORMAL_CONFIRM_COUNT = 15; 
 /*
   Κάτω από αυτή τη διαφορά θεωρούμε
   ότι είναι φυσιολογικός θόρυβος.
@@ -58,7 +67,94 @@ function updateStatus() {
   }
 }
 
+function updateAnomalyState(delta) {
 
+  const absDelta = Math.abs(delta);
+
+  /*
+     Ισχυρή ανωμαλία
+  */
+
+  if (absDelta >= ANOMALY_THRESHOLD) {
+
+    anomalyCounter++;
+    normalCounter = 0;
+
+    if (
+      anomalyCounter >= ANOMALY_CONFIRM_COUNT
+    ) {
+      anomalyState = 'ANOMALY';
+    }
+
+  }
+
+  /*
+     Πιθανή ανωμαλία
+  */
+
+  else if (
+    absDelta >= POSSIBLE_THRESHOLD
+  ) {
+
+    anomalyCounter = 0;
+    normalCounter = 0;
+
+    if (anomalyState !== 'ANOMALY') {
+      anomalyState = 'POSSIBLE';
+    }
+
+  }
+
+  /*
+     Χαμηλή / φυσιολογική περιοχή
+  */
+
+  else {
+
+    anomalyCounter = 0;
+    normalCounter++;
+
+    if (
+      normalCounter >= NORMAL_CONFIRM_COUNT
+    ) {
+      anomalyState = 'NORMAL';
+    }
+  }
+
+
+  /*
+     Εμφάνιση κατάστασης
+  */
+
+  if (anomalyState === 'NORMAL') {
+
+    $('message').textContent =
+      '● NORMAL — no significant anomaly';
+
+    $('message').style.color =
+      '#36e37e';
+
+  }
+
+  else if (anomalyState === 'POSSIBLE') {
+
+    $('message').textContent =
+      '● POSSIBLE MAGNETIC ANOMALY';
+
+    $('message').style.color =
+      '#ffd740';
+
+  }
+
+  else if (anomalyState === 'ANOMALY') {
+
+    $('message').textContent =
+      '● MAGNETIC ANOMALY DETECTED';
+
+    $('message').style.color =
+      '#ff3b30';
+  }
+}
 /* =========================================================
    CANVAS
 ========================================================= */
@@ -341,7 +437,6 @@ function onMagneticReading(r) {
     Number.isFinite(
       Number(r.magnitude)
     )
-
       ? Number(r.magnitude)
 
       : Math.sqrt(
@@ -514,6 +609,13 @@ previousSmoothB =
 
   lastDelta =
     delta;
+
+  if (
+    scanning &&
+    baseline !== null
+  ) {
+    updateAnomalyState(delta);
+  }
 
 
   /* -------------------------
@@ -807,7 +909,10 @@ $('scan')
     $('freeze').textContent =
       'FREEZE';
 
-
+    anomalyState = 'NORMAL';
+    anomalyCounter = 0;
+    normalCounter = 0;
+    
     if (scanning) {
 
       $('message').textContent =
@@ -860,7 +965,11 @@ $('clear')
 .addEventListener(
   'click',
   () => {
+   anomalyState = 'NORMAL';
+   anomalyCounter = 0;
+   normalCounter = 0;
 
+$('message').style.color = '';
     ctx.clearRect(
       0,
       0,
