@@ -39,10 +39,10 @@ jobs:
       - name: Add Android platform
         run: cordova platform add android@15.1.0
 
-        - name: Add MScan native plugins
+      - name: Add MScan native plugins
         run: |
-         cordova plugin add ./plugins-src/mscan-magnetometer
-         cordova plugin add ./plugins-src/mscan-camera
+          cordova plugin add ./plugins-src/mscan-magnetometer
+          cordova plugin add ./plugins-src/mscan-camera
 
       - name: Build MScan APK
         run: cordova build android --debug
@@ -50,12 +50,12 @@ jobs:
       - name: Prepare APK
         run: |
           mkdir -p dist
-          cp platforms/android/app/build/outputs/apk/debug/app-debug.apk dist/MScan-v0.1-debug.apk
+          cp platforms/android/app/build/outputs/apk/debug/app-debug.apk dist/MScan-v0.3-debug.apk
 
       - name: Upload MScan APK
         uses: actions/upload-artifact@v4
         with:
           name: MScan-Android-APK
-          path: dist/MScan-v0.1-debug.apk
+          path: dist/MScan-v0.3-debug.apk
           if-no-files-found: error
           retention-days: 30
