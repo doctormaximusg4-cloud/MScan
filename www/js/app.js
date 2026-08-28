@@ -69,90 +69,169 @@ function updateStatus() {
 
 function updateAnomalyState(delta) {
 
-  const absDelta = Math.abs(delta);
+  const absDelta =
+    Math.abs(delta);
+
 
   /*
-     Ισχυρή ανωμαλία
+     ΙΣΧΥΡΗ ΑΝΩΜΑΛΙΑ
   */
 
-  if (absDelta >= ANOMALY_THRESHOLD) {
+  if (
+    absDelta >=
+    ANOMALY_THRESHOLD
+  ) {
 
     anomalyCounter++;
-    normalCounter = 0;
+
+    normalCounter =
+      0;
+
 
     if (
-      anomalyCounter >= ANOMALY_CONFIRM_COUNT
+      anomalyCounter >=
+      ANOMALY_CONFIRM_COUNT
     ) {
-      anomalyState = 'ANOMALY';
+
+      anomalyState =
+        'ANOMALY';
     }
 
   }
 
+
   /*
-     Πιθανή ανωμαλία
+     ΠΙΘΑΝΗ ΑΝΩΜΑΛΙΑ
   */
 
   else if (
-    absDelta >= POSSIBLE_THRESHOLD
+    absDelta >=
+    POSSIBLE_THRESHOLD
   ) {
 
-    anomalyCounter = 0;
-    normalCounter = 0;
+    anomalyCounter =
+      0;
 
-    if (anomalyState !== 'ANOMALY') {
-      anomalyState = 'POSSIBLE';
+    normalCounter =
+      0;
+
+
+    if (
+      anomalyState !==
+      'ANOMALY'
+    ) {
+
+      anomalyState =
+        'POSSIBLE';
     }
 
   }
 
+
   /*
-     Χαμηλή / φυσιολογική περιοχή
+     NORMAL
   */
 
   else {
 
-    anomalyCounter = 0;
+    anomalyCounter =
+      0;
+
     normalCounter++;
 
+
     if (
-      normalCounter >= NORMAL_CONFIRM_COUNT
+      normalCounter >=
+      NORMAL_CONFIRM_COUNT
     ) {
-      anomalyState = 'NORMAL';
+
+      anomalyState =
+        'NORMAL';
     }
   }
 
 
   /*
-     Εμφάνιση κατάστασης
+     UPDATE LARGE PANEL
   */
 
-  if (anomalyState === 'NORMAL') {
+  const panel =
+    $('anomalyPanel');
 
-    $('message').textContent =
-      '● NORMAL — no significant anomaly';
+  const title =
+    $('anomalyTitle');
 
-    $('message').style.color =
-      '#36e37e';
+  const description =
+    $('anomalyDescription');
+
+  const deltaDisplay =
+    $('anomalyDelta');
+
+
+  deltaDisplay.textContent =
+    (delta >= 0 ? '+' : '') +
+    delta.toFixed(1);
+
+
+  /*
+     NORMAL
+  */
+
+  if (
+    anomalyState ===
+    'NORMAL'
+  ) {
+
+    panel.className =
+      'anomaly-panel normal';
+
+    title.textContent =
+      '● NORMAL';
+
+    description.textContent =
+      'No significant magnetic anomaly';
 
   }
 
-  else if (anomalyState === 'POSSIBLE') {
 
-    $('message').textContent =
-      '● POSSIBLE MAGNETIC ANOMALY';
+  /*
+     POSSIBLE
+  */
 
-    $('message').style.color =
-      '#ffd740';
+  else if (
+    anomalyState ===
+    'POSSIBLE'
+  ) {
+
+    panel.className =
+      'anomaly-panel possible';
+
+    title.textContent =
+      '● POSSIBLE ANOMALY';
+
+    description.textContent =
+      'Magnetic variation under evaluation';
 
   }
 
-  else if (anomalyState === 'ANOMALY') {
 
-    $('message').textContent =
-      '● MAGNETIC ANOMALY DETECTED';
+  /*
+     CONFIRMED
+  */
 
-    $('message').style.color =
-      '#ff3b30';
+  else if (
+    anomalyState ===
+    'ANOMALY'
+  ) {
+
+    panel.className =
+      'anomaly-panel anomaly';
+
+    title.textContent =
+      '⚠ ANOMALY DETECTED';
+
+    description.textContent =
+      'Strong magnetic anomaly detected';
   }
 }
 /* =========================================================
