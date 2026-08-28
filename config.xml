@@ -18,6 +18,4 @@
  <icon density="xhdpi" src="res/android/icon/xhdpi.png" />
  <icon density="xxhdpi" src="res/android/icon/xxhdpi.png" />
  <icon density="xxxhdpi" src="res/android/icon/xxxhdpi.png" />
- <plugin name="com.mintsog.mscan.magnetometer" spec="plugins-src/mscan-magnetometer" />
- <plugin name="com.mintsog.mscan.camera" spec="plugins-src/mscan-camera" />
 </widget>
