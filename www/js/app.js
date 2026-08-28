@@ -26,6 +26,12 @@ let sensorStarted = false;
 
 let lastDelta = 0;
 
+let heatX = null;
+let heatY = null;
+
+let heatVX = 1.8;
+let heatVY = 1.2;
+
 
 /* =========================================================
    STATUS
