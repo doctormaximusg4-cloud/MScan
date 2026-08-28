@@ -1,0 +1,19 @@
+{
+  "name": "com.mintsog.mscan.camera",
+  "version": "1.0.0",
+  "description": "Native Android live camera preview bridge for MScan",
+  "cordova": {
+    "id": "com.mintsog.mscan.camera",
+    "platforms": [
+      "android"
+    ]
+  },
+  "keywords": [
+    "cordova",
+    "android",
+    "camera",
+    "preview",
+    "mscan"
+  ],
+  "license": "MIT"
+}
