@@ -160,34 +160,29 @@ function magneticColor(
    LIVE MAGNETIC BLOB
 ========================================================= */
 
-function drawLiveBlob(delta) {
+clear(delta) {
 
   /*
-     Σβήνουμε πολύ λίγο το προηγούμενο frame
-     ώστε οι παλιές μετρήσεις να παραμένουν
-     σαν heatmap trail.
+     Fade παλιών σημείων
   */
 
   ctx.save();
 
-ctx.globalCompositeOperation =
-  'destination-out';
+  ctx.globalCompositeOperation =
+    'destination-out';
 
-ctx.fillStyle =
-  'rgba(0,0,0,0.025)';
+  ctx.fillStyle =
+    'rgba(0,0,0,0.012)';
 
-ctx.fillRect(
-  0,
-  0,
-  innerWidth,
-  innerHeight
-);
+  ctx.fillRect(
+    0,
+    0,
+    innerWidth,
+    innerHeight
+  );
 
-ctx.restore();
+  ctx.restore();
 
-  /*
-     Dead-zone
-  */
 
   if (
     Math.abs(delta) <
@@ -197,11 +192,57 @@ ctx.restore();
   }
 
 
-  const cx =
-    innerWidth / 2;
+  /*
+     Πρώτη θέση heatmap
+  */
 
-  const cy =
-    innerHeight / 2;
+  if (
+    heatX === null ||
+    heatY === null
+  ) {
+
+    heatX =
+      innerWidth / 2;
+
+    heatY =
+      innerHeight / 2;
+  }
+
+
+  /*
+     Μετακίνηση σημείου καταγραφής
+  */
+
+  heatX += heatVX;
+  heatY += heatVY;
+
+
+  /*
+     Αναπήδηση στα όρια της οθόνης
+  */
+
+  const margin = 60;
+
+  if (
+    heatX >
+    innerWidth - margin ||
+    heatX <
+    margin
+  ) {
+
+    heatVX *= -1;
+  }
+
+
+  if (
+    heatY >
+    innerHeight - margin ||
+    heatY <
+    margin
+  ) {
+
+    heatVY *= -1;
+  }
 
 
   const strength =
@@ -215,45 +256,30 @@ ctx.restore();
     );
 
 
-  /*
-     Μικρό σήμα = μικρή κηλίδα
-     Μεγάλο σήμα = μεγαλύτερη κηλίδα
-  */
-
   const radius =
-    25 +
-    strength * 110;
+    20 +
+    strength * 85;
 
 
   /*
-     Ελαφριά τυχαία μετατόπιση
-     γύρω από το crosshair,
-     ώστε οι μετρήσεις να δημιουργούν
-     πιο φυσικό heatmap.
+     Μικρή διασπορά
+     ώστε να ενώνονται οι κηλίδες
   */
-
-  const spread =
-    10 +
-    strength * 25;
 
   const x =
-    cx +
-    (Math.random() - 0.5) *
-    spread;
+    heatX +
+    (Math.random() - 0.5) * 18;
 
   const y =
-    cy +
-    (Math.random() - 0.5) *
-    spread;
+    heatY +
+    (Math.random() - 0.5) * 18;
 
 
   const gradient =
     ctx.createRadialGradient(
-
       x,
       y,
       0,
-
       x,
       y,
       radius
@@ -264,28 +290,25 @@ ctx.restore();
     0,
     magneticColor(
       delta,
-      0.80
+      0.85
     )
   );
 
-
   gradient.addColorStop(
-    0.30,
+    0.35,
     magneticColor(
       delta,
       0.55
     )
   );
 
-
   gradient.addColorStop(
-    0.65,
+    0.70,
     magneticColor(
       delta,
-      0.22
+      0.20
     )
   );
-
 
   gradient.addColorStop(
     1,
@@ -299,7 +322,6 @@ ctx.restore();
   ctx.fillStyle =
     gradient;
 
-
   ctx.beginPath();
 
   ctx.arc(
@@ -312,7 +334,6 @@ ctx.restore();
 
   ctx.fill();
 }
-
 
 /* =========================================================
    REDRAW
@@ -803,11 +824,13 @@ $('clear')
       innerHeight
     );
 
-    lastDelta =
-      0;
+    lastDelta = 0;
+
+    heatX = null;
+    heatY = null;
 
     $('message').textContent =
-      'Overlay cleared.';
+      'Heatmap cleared.';
   }
 );
 
