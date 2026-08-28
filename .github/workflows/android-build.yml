@@ -39,6 +39,11 @@ jobs:
       - name: Add Android platform
         run: cordova platform add android@15.1.0
 
+        - name: Add MScan native plugins
+        run: |
+         cordova plugin add ./plugins-src/mscan-magnetometer
+         cordova plugin add ./plugins-src/mscan-camera
+
       - name: Build MScan APK
         run: cordova build android --debug
 
