@@ -26,11 +26,6 @@ let sensorStarted = false;
 
 let lastDelta = 0;
 
-let heatX = null;
-let heatY = null;
-
-let heatVX = 1.8;
-let heatVY = 1.2;
 
 
 /* =========================================================
@@ -163,26 +158,21 @@ function magneticColor(
 function drawLiveBlob(delta) {
 
   /*
-     Fade παλιών σημείων
+     Καθαρίζουμε το προηγούμενο live blob.
+     Δεν κρατάμε πλέον τεχνητό trail / zig-zag.
   */
 
-  ctx.save();
-
-  ctx.globalCompositeOperation =
-    'destination-out';
-
-  ctx.fillStyle =
-    'rgba(0,0,0,0.012)';
-
-  ctx.fillRect(
+  ctx.clearRect(
     0,
     0,
     innerWidth,
     innerHeight
   );
 
-  ctx.restore();
 
+  /*
+     Μικρές διακυμάνσεις αγνοούνται.
+  */
 
   if (
     Math.abs(delta) <
@@ -192,96 +182,70 @@ function drawLiveBlob(delta) {
   }
 
 
-  /*
-     Πρώτη θέση heatmap
-  */
+  const cx =
+    innerWidth / 2;
 
-  if (
-    heatX === null ||
-    heatY === null
-  ) {
-
-    heatX =
-      innerWidth / 2;
-
-    heatY =
-      innerHeight / 2;
-  }
+  const cy =
+    innerHeight / 2;
 
 
   /*
-     Μετακίνηση σημείου καταγραφής
+     ΝΕΟ dynamic range.
+
+     Δεν τερματίζει πλέον στα ±10 μT.
+     Χρησιμοποιούμε πιο ήπια καμπύλη
+     ώστε μεγάλα σήματα να έχουν περιθώριο.
   */
 
-  heatX += heatVX;
-  heatY += heatVY;
+  const absDelta =
+    Math.abs(delta);
 
+  const range =
+    Math.max(
+      40,
+      sensitivity * 5
+    );
 
-  /*
-     Αναπήδηση στα όρια της οθόνης
-  */
+  let strength =
+    Math.log1p(absDelta) /
+    Math.log1p(range);
 
-  const margin = 60;
-
-  if (
-    heatX >
-    innerWidth - margin ||
-    heatX <
-    margin
-  ) {
-
-    heatVX *= -1;
-  }
-
-
-  if (
-    heatY >
-    innerHeight - margin ||
-    heatY <
-    margin
-  ) {
-
-    heatVY *= -1;
-  }
-
-
-  const strength =
-    Math.min(
-      1,
-      Math.abs(delta) /
-      Math.max(
+  strength =
+    Math.max(
+      0,
+      Math.min(
         1,
-        sensitivity
+        strength
       )
     );
 
 
+  /*
+     Μέγεθος blob
+  */
+
   const radius =
-    20 +
-    strength * 85;
+    35 +
+    strength * 120;
 
 
   /*
-     Μικρή διασπορά
-     ώστε να ενώνονται οι κηλίδες
+     Λίγο πιο ήπια διαφάνεια
+     για να μη "μπουκώνει" η εικόνα.
   */
 
-  const x =
-    heatX +
-    (Math.random() - 0.5) * 18;
-
-  const y =
-    heatY +
-    (Math.random() - 0.5) * 18;
+  const centerAlpha =
+    0.30 +
+    strength * 0.40;
 
 
   const gradient =
     ctx.createRadialGradient(
-      x,
-      y,
+      cx,
+      cy,
       0,
-      x,
-      y,
+      cx,
+      cy,
       radius
     );
 
@@ -290,23 +254,23 @@ function drawLiveBlob(delta) {
     0,
     magneticColor(
       delta,
-      0.85
+      centerAlpha
     )
   );
 
   gradient.addColorStop(
-    0.35,
+    0.30,
     magneticColor(
       delta,
-      0.55
+      centerAlpha * 0.70
     )
   );
 
   gradient.addColorStop(
-    0.70,
+    0.65,
     magneticColor(
       delta,
-      0.20
+      centerAlpha * 0.30
     )
   );
 
@@ -325,8 +289,8 @@ function drawLiveBlob(delta) {
   ctx.beginPath();
 
   ctx.arc(
-    x,
-    y,
+    cx,
+    cy,
     radius,
     0,
     Math.PI * 2
@@ -826,8 +790,7 @@ $('clear')
 
     lastDelta = 0;
 
-    heatX = null;
-    heatY = null;
+    
 
     $('message').textContent =
       'Heatmap cleared.';
