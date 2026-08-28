@@ -156,17 +156,31 @@ function magneticColor(
 
 function drawLiveBlob(delta) {
 
-  ctx.clearRect(
-    0,
-    0,
-    innerWidth,
-    innerHeight
-  );
+  /*
+     Σβήνουμε πολύ λίγο το προηγούμενο frame
+     ώστε οι παλιές μετρήσεις να παραμένουν
+     σαν heatmap trail.
+  */
+
+  ctx.save();
+
+ctx.globalCompositeOperation =
+  'destination-out';
+
+ctx.fillStyle =
+  'rgba(0,0,0,0.025)';
+
+ctx.fillRect(
+  0,
+  0,
+  innerWidth,
+  innerHeight
+);
+
+ctx.restore();
 
   /*
-     Dead-zone.
-     Μικρές φυσιολογικές διακυμάνσεις
-     δεν δημιουργούν anomaly.
+     Dead-zone
   */
 
   if (
@@ -176,11 +190,13 @@ function drawLiveBlob(delta) {
     return;
   }
 
+
   const cx =
     innerWidth / 2;
 
   const cy =
     innerHeight / 2;
+
 
   const strength =
     Math.min(
@@ -192,26 +208,51 @@ function drawLiveBlob(delta) {
       )
     );
 
+
   /*
-     Όσο μεγαλύτερη η ανωμαλία,
-     τόσο μεγαλύτερος ο κύκλος.
+     Μικρό σήμα = μικρή κηλίδα
+     Μεγάλο σήμα = μεγαλύτερη κηλίδα
   */
 
   const radius =
-    60 +
-    strength * 150;
+    25 +
+    strength * 110;
+
+
+  /*
+     Ελαφριά τυχαία μετατόπιση
+     γύρω από το crosshair,
+     ώστε οι μετρήσεις να δημιουργούν
+     πιο φυσικό heatmap.
+  */
+
+  const spread =
+    10 +
+    strength * 25;
+
+  const x =
+    cx +
+    (Math.random() - 0.5) *
+    spread;
+
+  const y =
+    cy +
+    (Math.random() - 0.5) *
+    spread;
+
 
   const gradient =
     ctx.createRadialGradient(
 
-      cx,
-      cy,
-      5,
+      x,
+      y,
+      0,
 
-      cx,
-      cy,
+      x,
+      y,
       radius
     );
+
 
   gradient.addColorStop(
     0,
@@ -221,21 +262,24 @@ function drawLiveBlob(delta) {
     )
   );
 
+
   gradient.addColorStop(
-    0.25,
+    0.30,
     magneticColor(
       delta,
       0.55
     )
   );
 
+
   gradient.addColorStop(
-    0.55,
+    0.65,
     magneticColor(
       delta,
-      0.25
+      0.22
     )
   );
+
 
   gradient.addColorStop(
     1,
@@ -245,14 +289,16 @@ function drawLiveBlob(delta) {
     )
   );
 
+
   ctx.fillStyle =
     gradient;
+
 
   ctx.beginPath();
 
   ctx.arc(
-    cx,
-    cy,
+    x,
+    y,
     radius,
     0,
     Math.PI * 2
@@ -275,15 +321,6 @@ function redraw() {
 
     drawLiveBlob(
       lastDelta
-    );
-
-  } else {
-
-    ctx.clearRect(
-      0,
-      0,
-      innerWidth,
-      innerHeight
     );
   }
 }
