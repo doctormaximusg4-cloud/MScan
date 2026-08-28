@@ -1,0 +1,1 @@
+var exec=require('cordova/exec');module.exports={start:(s,e)=>exec(s,e,'MScanCamera','start',[]),stop:(s,e)=>exec(s,e,'MScanCamera','stop',[])};
