@@ -26,7 +26,12 @@ let sensorStarted = false;
 
 let lastDelta = 0;
 
+let stableSamples = 0;
+let previousSmoothB = null;
 
+const AUTOZERO_STABLE_EPS = 0.5;
+const AUTOZERO_DELAY = 40;     // περίπου 2 sec
+const AUTOZERO_RATE = 0.006;   // πολύ αργή διόρθωση
 
 /* =========================================================
    STATUS
@@ -422,6 +427,81 @@ if (baseline !== null) {
   }
 }
 
+  /*
+   AUTO ZERO / BASELINE DRIFT COMPENSATION
+
+   Αν η μέτρηση μείνει σταθερή για λίγο
+   και η διαφορά δεν είναι πολύ μεγάλη,
+   το baseline ακολουθεί ΠΟΛΥ αργά.
+*/
+
+if (
+  baseline !== null &&
+  scanning &&
+  !frozen
+) {
+
+  if (previousSmoothB !== null) {
+
+    const movement =
+      Math.abs(
+        smoothB - previousSmoothB
+      );
+
+    if (
+      movement <
+      AUTOZERO_STABLE_EPS
+    ) {
+
+      stableSamples++;
+
+    } else {
+
+      stableSamples = 0;
+    }
+  }
+
+
+  /*
+     Μέχρι ποια διαφορά επιτρέπεται
+     να θεωρήσουμε ότι είναι drift.
+  */
+
+  const autoZeroWindow =
+    Math.max(
+      6,
+      sensitivity * 0.70
+    );
+
+
+  const provisionalDelta =
+    smoothB - baseline;
+
+
+  /*
+     Μόνο αφού μείνει σταθερό
+     περίπου 2 δευτερόλεπτα.
+  */
+
+  if (
+    stableSamples >= AUTOZERO_DELAY &&
+    Math.abs(provisionalDelta) <
+      autoZeroWindow
+  ) {
+
+    baseline +=
+      provisionalDelta *
+      AUTOZERO_RATE;
+  }
+
+} else {
+
+  stableSamples = 0;
+}
+
+
+previousSmoothB =
+  smoothB;
 
   let delta = 0;
 
@@ -790,7 +870,8 @@ $('clear')
 
     lastDelta = 0;
 
-    
+    stableSamples = 0;
+    previousSmoothB = smoothB;
 
     $('message').textContent =
       'Heatmap cleared.';
