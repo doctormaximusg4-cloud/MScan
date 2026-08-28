@@ -322,16 +322,77 @@ function onMagneticReading(r) {
      Low-pass smoothing
   */
 
-  smoothB =
-    smoothB === null
+  /*
+   Προστασία από πολύ μεγάλα αντικείμενα / saturation.
 
-      ? total
+   Ένα τεράστιο magnetic spike δεν επιτρέπεται
+   να τραβήξει το φίλτρο εκατοντάδες μT μακριά
+   από το baseline.
+*/
 
-      : smoothing *
-          smoothB +
+let filterInput = total;
 
-        (1 - smoothing) *
-          total;
+if (baseline !== null) {
+
+  const maxInfluence =
+    Math.max(
+      20,
+      sensitivity * 3
+    );
+
+  const minAllowed =
+    baseline - maxInfluence;
+
+  const maxAllowed =
+    baseline + maxInfluence;
+
+  filterInput =
+    Math.max(
+      minAllowed,
+      Math.min(
+        maxAllowed,
+        total
+      )
+    );
+}
+
+
+/*
+   Normal smoothing
+*/
+
+smoothB =
+  smoothB === null
+    ? filterInput
+    : smoothing * smoothB +
+      (1 - smoothing) * filterInput;
+
+
+/*
+   Γρήγορη επαναφορά όταν φύγουμε
+   από το μεγάλο αντικείμενο.
+*/
+
+if (baseline !== null) {
+
+  const rawDifference =
+    Math.abs(
+      total - baseline
+    );
+
+  if (
+    rawDifference <
+    Math.max(
+      2,
+      sensitivity * 0.35
+    )
+  ) {
+
+    smoothB =
+      smoothB * 0.35 +
+      total * 0.65;
+  }
+}
 
 
   let delta = 0;
