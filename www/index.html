@@ -2,70 +2,239 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self' data: blob: gap: https://ssl.gstatic.com;
-                 style-src 'self' 'unsafe-inline';
-                 script-src 'self' 'unsafe-inline' 'unsafe-eval';
-                 img-src 'self' data: blob: content: file:;
-                 media-src * blob:;">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"
+  >
+
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self' data: blob: gap: https://ssl.gstatic.com;
+      style-src 'self' 'unsafe-inline';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      img-src 'self' data: blob: content: file:;
+      media-src * blob:;
+    "
+  >
+
   <title>MScan</title>
+
   <script src="cordova.js"></script>
+
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
+
 <main id="app">
+
   <canvas id="overlay"></canvas>
 
+
+  <!-- TOP HUD -->
+
   <section class="hud top">
+
     <div class="brandline">
-      <div class="brand">MScan <small>MAGNETIC LIVE SCANNER</small></div>
-      <span id="state" class="status">WAIT</span>
+
+      <div class="brand">
+        MScan
+        <small>MAGNETIC LIVE SCANNER</small>
+      </div>
+
+      <span
+        id="state"
+        class="status"
+      >
+        WAIT
+      </span>
+
     </div>
+
 
     <div class="mainreading">
-      <span id="delta">0.0</span><small> μT ΔB</small>
+
+      <span id="delta">
+        0.0
+      </span>
+
+      <small>
+        μT ΔB
+      </small>
+
     </div>
+
 
     <div class="subreading">
-      <span>B <b id="total">0.0</b> μT</span>
-      <span>X <b id="x">0.0</b></span>
-      <span>Y <b id="y">0.0</b></span>
-      <span>Z <b id="z">0.0</b></span>
+
+      <span>
+        B
+        <b id="total">0.0</b>
+        μT
+      </span>
+
+      <span>
+        X
+        <b id="x">0.0</b>
+      </span>
+
+      <span>
+        Y
+        <b id="y">0.0</b>
+      </span>
+
+      <span>
+        Z
+        <b id="z">0.0</b>
+      </span>
+
     </div>
+
   </section>
 
-  <div class="reticle" aria-hidden="true"></div>
 
-  <div class="legend" aria-hidden="true">
+  <!-- CROSSHAIR -->
+
+  <div
+    class="reticle"
+    aria-hidden="true"
+  ></div>
+
+
+  <!-- COLOR SCALE -->
+
+  <div
+    class="legend"
+    aria-hidden="true"
+  >
+
     <span>+</span>
+
     <div class="gradient"></div>
+
     <span>−</span>
+
   </div>
 
-  <section class="hud bottom">
-    <label>
-      <span>Sensitivity</span>
-      <input id="sens" type="range" min="1" max="40" value="10">
-      <output id="sensVal">10 μT</output>
-    </label>
 
-    <label>
-      <span>Smoothing</span>
-      <input id="smooth" type="range" min="0" max="95" value="65">
-      <output id="smoothVal">65%</output>
-    </label>
+  <!-- LARGE DETECTION RESULT -->
 
-    <div class="buttons">
-      <button id="calibrate">CALIBRATE</button>
-      <button id="scan" class="primary">START SCAN</button>
-      <button id="freeze">FREEZE</button>
-      <button id="clear">CLEAR</button>
+  <section
+    id="anomalyPanel"
+    class="anomaly-panel normal"
+  >
+
+    <div
+      id="anomalyTitle"
+      class="anomaly-title"
+    >
+      ● NORMAL
     </div>
 
-    <p id="message">Starting camera and magnetic sensor…</p>
+    <div
+      id="anomalyDescription"
+      class="anomaly-description"
+    >
+      No significant magnetic anomaly
+    </div>
+
+    <div class="anomaly-delta">
+
+      ΔB
+
+      <strong id="anomalyDelta">
+        0.0
+      </strong>
+
+      μT
+
+    </div>
+
   </section>
+
+
+  <!-- BOTTOM CONTROLS -->
+
+  <section class="hud bottom">
+
+    <label>
+
+      <span>
+        Sensitivity
+      </span>
+
+      <input
+        id="sens"
+        type="range"
+        min="1"
+        max="40"
+        value="20"
+      >
+
+      <output id="sensVal">
+        20 μT
+      </output>
+
+    </label>
+
+
+    <label>
+
+      <span>
+        Smoothing
+      </span>
+
+      <input
+        id="smooth"
+        type="range"
+        min="0"
+        max="95"
+        value="55"
+      >
+
+      <output id="smoothVal">
+        55%
+      </output>
+
+    </label>
+
+
+    <div class="buttons">
+
+      <button id="calibrate">
+        CALIBRATE
+      </button>
+
+      <button
+        id="scan"
+        class="primary"
+      >
+        START SCAN
+      </button>
+
+      <button id="freeze">
+        FREEZE
+      </button>
+
+      <button id="clear">
+        CLEAR
+      </button>
+
+    </div>
+
+
+    <p id="message">
+      Starting camera and magnetic sensor…
+    </p>
+
+  </section>
+
 </main>
+
+
 <script src="js/app.js"></script>
+
 </body>
 </html>
