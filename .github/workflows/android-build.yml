@@ -1,61 +1,37 @@
-name: Build MScan Android APK
+name: Reset MScan from ZIP
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+
+permissions:
+  contents: write
 
 jobs:
-  build-android:
+  reset:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK 36
+      - name: Rebuild repository from clean ZIP
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          mkdir /tmp/mscan
+          unzip MScan_v1_CLEAN.zip -d /tmp/mscan
 
-      - name: Install Cordova
-        run: npm install -g cordova@latest
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name ".git" \
+            ! -name "MScan_v1_CLEAN.zip" \
+            -exec rm -rf {} +
 
-      - name: Add Android platform
-        run: cordova platform add android@15.1.0
+          cp -a /tmp/mscan/. .
+          rm -f MScan_v1_CLEAN.zip
 
-      - name: Add MScan native plugins
+      - name: Commit clean project
         run: |
-          cordova plugin add ./plugins-src/mscan-magnetometer
-          cordova plugin add ./plugins-src/mscan-camera
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Build MScan APK
-        run: cordova build android --debug
-
-      - name: Prepare APK
-        run: |
-          mkdir -p dist
-          cp platforms/android/app/build/outputs/apk/debug/app-debug.apk dist/MScan-v0.3-debug.apk
-
-      - name: Upload MScan APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: MScan-Android-APK
-          path: dist/MScan-v0.3-debug.apk
-          if-no-files-found: error
-          retention-days: 30
+          git add -A
+          git commit -m "Reset MScan to clean v1" || exit 0
+          git push
