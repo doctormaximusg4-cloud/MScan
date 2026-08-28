@@ -1,37 +1,73 @@
-name: Reset MScan from ZIP
+name: Build MScan Android APK
 
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write
+  push:
+    branches:
+      - main
 
 jobs:
-  reset:
+  build-android:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Rebuild repository from clean ZIP
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 36
         run: |
-          mkdir /tmp/mscan
-          unzip MScan_v1_CLEAN.zip -d /tmp/mscan
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-          find . -mindepth 1 -maxdepth 1 \
-            ! -name ".git" \
-            ! -name "MScan_v1_CLEAN.zip" \
-            -exec rm -rf {} +
+      - name: Install Cordova
+        run: npm install -g cordova@latest
 
-          cp -a /tmp/mscan/. .
-          rm -f MScan_v1_CLEAN.zip
+      - name: Add Android platform
+        run: cordova platform add android@15.1.0
 
-      - name: Commit clean project
+      - name: Add MScan native plugins
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cordova plugin add ./plugins-src/mscan-magnetometer
+          cordova plugin add ./plugins-src/mscan-camera
 
-          git add -A
-          git commit -m "Reset MScan to clean v1" || exit 0
-          git push
+      - name: Show installed plugins
+        run: cordova plugin list
+
+      - name: Check for old CameraPreview references
+        run: |
+          if grep -RniE "CameraPreview|cordova-plugin-camera-preview|camera preview plugin was not loadet" www plugins-src config.xml package.json; then
+            echo "ERROR: Old CameraPreview code still exists."
+            exit 1
+          else
+            echo "OK: No old CameraPreview references found."
+          fi
+
+      - name: Build MScan APK
+        run: cordova build android --debug
+
+      - name: Prepare APK
+        run: |
+          mkdir -p dist
+          cp platforms/android/app/build/outputs/apk/debug/app-debug.apk dist/MScan-v1.0-debug.apk
+
+      - name: Upload MScan APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MScan-Android-APK
+          path: dist/MScan-v1.0-debug.apk
+          if-no-files-found: error
+          retention-days: 30
