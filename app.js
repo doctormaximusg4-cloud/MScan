@@ -1,209 +1,81 @@
 (() => {
 'use strict';
-const $ = id => document.getElementById(id);
-const canvas = $('overlay');
-const ctx = canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const canvas=$('overlay'),ctx=canvas.getContext('2d');
+let baseline=null,smoothB=null,scanning=false,frozen=false,sensitivity=10,smoothing=.65,points=[];
 
-let baseline = null;
-let smoothB = null;
-let scanning = false;
-let frozen = false;
-let sensitivity = 10;
-let smoothing = 0.65;
-let points = [];
-let cameraStarted = false;
-let sensorStarted = false;
-
-function resize() {
-  const d = window.devicePixelRatio || 1;
-  canvas.width = innerWidth * d;
-  canvas.height = innerHeight * d;
-  canvas.style.width = innerWidth + 'px';
-  canvas.style.height = innerHeight + 'px';
-  ctx.setTransform(d, 0, 0, d, 0, 0);
-  redraw();
+function resize(){
+ const d=devicePixelRatio||1;
+ canvas.width=innerWidth*d; canvas.height=innerHeight*d;
+ canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
+ ctx.setTransform(d,0,0,d,0,0); redraw();
 }
-window.addEventListener('resize', resize);
+addEventListener('resize',resize);
 
-function magneticColor(delta, alpha) {
-  const t = Math.max(-1, Math.min(1, delta / Math.max(1, sensitivity)));
-  let hue;
-  if (t < 0) {
-    const q = t + 1;
-    hue = 225 + (180 - 225) * q;
-  } else {
-    hue = 120 * (1 - t);
-  }
-  return `hsla(${hue},100%,50%,${alpha})`;
+function magneticColor(delta,alpha){
+ const t=Math.max(-1,Math.min(1,delta/Math.max(1,sensitivity)));
+ let h=t<0?225+(t+1)*(180-225):120*(1-t);
+ return `hsla(${h},100%,50%,${alpha})`;
 }
+function drawBlob(p){
+ const s=Math.min(1.8,Math.abs(p.delta)/Math.max(1,sensitivity));
+ const r=52+s*55;
+ const g=ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,r);
+ g.addColorStop(0,magneticColor(p.delta,.72));
+ g.addColorStop(.45,magneticColor(p.delta,.35));
+ g.addColorStop(1,magneticColor(p.delta,0));
+ ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fill();
+}
+function redraw(){ctx.clearRect(0,0,innerWidth,innerHeight); points.forEach(drawBlob);}
 
-function drawBlob(p) {
-  const strength = Math.min(1.8, Math.abs(p.delta) / Math.max(1, sensitivity));
-  const radius = 52 + strength * 55;
-  const g = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, radius);
-  g.addColorStop(0, magneticColor(p.delta, 0.72));
-  g.addColorStop(0.45, magneticColor(p.delta, 0.35));
-  g.addColorStop(1, magneticColor(p.delta, 0));
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-  ctx.fill();
+function onMag(r){
+ const x=+r.x||0,y=+r.y||0,z=+r.z||0;
+ const total=Number.isFinite(+r.magnitude)?+r.magnitude:Math.sqrt(x*x+y*y+z*z);
+ smoothB=smoothB===null?total:smoothing*smoothB+(1-smoothing)*total;
+ const d=baseline===null?0:smoothB-baseline;
+ $('x').textContent=x.toFixed(1); $('y').textContent=y.toFixed(1); $('z').textContent=z.toFixed(1);
+ $('total').textContent=smoothB.toFixed(1); $('delta').textContent=(d>=0?'+':'')+d.toFixed(1);
+ $('delta').style.color=magneticColor(d,1); $('state').textContent='MAG OK';
+ if(scanning&&!frozen&&baseline!==null){
+   points.push({x:innerWidth/2,y:innerHeight/2,delta:d});
+   if(points.length>220) points.shift();
+   redraw();
+ }
 }
 
-function redraw() {
-  ctx.clearRect(0, 0, innerWidth, innerHeight);
-  points.forEach(drawBlob);
+function startMag(){
+ if(!window.MScanMagnetometer){$('state').textContent='NO SENSOR';$('message').textContent='Magnetometer plugin not loaded.';return;}
+ MScanMagnetometer.start(onMag,e=>{$('state').textContent='MAG ERROR';$('message').textContent='Magnetometer: '+e;},{frequency:50});
+}
+function startCam(){
+ if(!window.MScanCamera){$('message').textContent='Native camera plugin not loaded.';return;}
+ MScanCamera.start(
+   ()=>{$('message').textContent='Native camera + magnetometer ready. Press CALIBRATE.';},
+   e=>{$('message').textContent='Camera: '+e;}
+ );
 }
 
-function onMagneticReading(r) {
-  const x = Number(r.x) || 0;
-  const y = Number(r.y) || 0;
-  const z = Number(r.z) || 0;
-  const total = Number.isFinite(Number(r.magnitude))
-    ? Number(r.magnitude)
-    : Math.sqrt(x*x + y*y + z*z);
-
-  smoothB = smoothB === null
-    ? total
-    : smoothing * smoothB + (1 - smoothing) * total;
-
-  const delta = baseline === null ? 0 : smoothB - baseline;
-
-  $('x').textContent = x.toFixed(1);
-  $('y').textContent = y.toFixed(1);
-  $('z').textContent = z.toFixed(1);
-  $('total').textContent = smoothB.toFixed(1);
-  $('delta').textContent = (delta >= 0 ? '+' : '') + delta.toFixed(1);
-  $('delta').style.color = magneticColor(delta, 1);
-  $('state').textContent = 'MAG OK';
-
-  if (scanning && !frozen && baseline !== null) {
-    points.push({ x: innerWidth / 2, y: innerHeight / 2, delta });
-    if (points.length > 220) points.shift();
-    redraw();
-  }
-}
-
-function startMagnetometer() {
-  if (!window.MScanMagnetometer) {
-    $('state').textContent = 'NO SENSOR';
-    $('message').textContent = 'MScan native magnetometer plugin was not loaded.';
-    return;
-  }
-  window.MScanMagnetometer.start(
-    onMagneticReading,
-    err => {
-      $('state').textContent = 'MAG ERROR';
-      $('message').textContent = 'Magnetometer: ' + err;
-    },
-    { frequency: 50 }
-  );
-  sensorStarted = true;
-}
-
-function startCamera() {
-  if (!window.CameraPreview) {
-    $('message').textContent = 'Camera Preview plugin was not loaded.';
-    return;
-  }
-
-  const options = {
-    x: 0,
-    y: 0,
-    width: window.screen.width,
-    height: window.screen.height,
-    camera: CameraPreview.CAMERA_DIRECTION.BACK,
-    toBack: true,
-    alpha: 1,
-    tapPhoto: false,
-    tapFocus: false,
-    previewDrag: false,
-    storeToFile: false
-  };
-
-  CameraPreview.startCamera(
-    options,
-    () => {
-      cameraStarted = true;
-      if (CameraPreview.show) {
-        CameraPreview.show(
-          () => {},
-          () => {}
-        );
-      }
-      $('message').textContent = sensorStarted
-        ? 'Camera + magnetometer ready. Press CALIBRATE.'
-        : 'Camera ready. Waiting for magnetometer…';
-    },
-    e => $('message').textContent = 'Camera error: ' + e
-  );
-}
-
-function calibrate() {
-  if (smoothB === null) {
-    $('message').textContent = 'Waiting for real magnetometer readings…';
-    return;
-  }
-  baseline = smoothB;
-  points = [];
-  redraw();
-  $('message').textContent = 'Baseline set: ' + baseline.toFixed(1) + ' μT';
-}
-
-$('calibrate').addEventListener('click', calibrate);
-
-$('scan').addEventListener('click', () => {
-  if (baseline === null) {
-    $('message').textContent = 'Calibrate first.';
-    return;
-  }
-  scanning = !scanning;
-  frozen = false;
-  $('scan').textContent = scanning ? 'STOP SCAN' : 'START SCAN';
-  $('freeze').textContent = 'FREEZE';
-  $('message').textContent = scanning
-    ? 'Scanning… move the phone slowly over the target.'
-    : 'Scan stopped.';
+$('calibrate').addEventListener('click',()=>{
+ if(smoothB===null){$('message').textContent='Waiting for magnetometer readings…';return;}
+ baseline=smoothB; points=[]; redraw(); $('message').textContent='Baseline set: '+baseline.toFixed(1)+' μT';
 });
-
-$('freeze').addEventListener('click', () => {
-  frozen = !frozen;
-  $('freeze').textContent = frozen ? 'RESUME' : 'FREEZE';
-  $('message').textContent = frozen ? 'Overlay frozen.' : 'Overlay resumed.';
+$('scan').addEventListener('click',()=>{
+ if(baseline===null){$('message').textContent='Calibrate first.';return;}
+ scanning=!scanning; frozen=false;
+ $('scan').textContent=scanning?'STOP SCAN':'START SCAN';
+ $('freeze').textContent='FREEZE';
+ $('message').textContent=scanning?'Scanning… move the phone slowly over the target.':'Scan stopped.';
 });
-
-$('clear').addEventListener('click', () => {
-  points = [];
-  redraw();
-  $('message').textContent = 'Overlay cleared.';
+$('freeze').addEventListener('click',()=>{
+ frozen=!frozen; $('freeze').textContent=frozen?'RESUME':'FREEZE';
 });
+$('clear').addEventListener('click',()=>{points=[];redraw();});
+$('sens').addEventListener('input',e=>{sensitivity=+e.target.value;$('sensVal').textContent=sensitivity+' μT';redraw();});
+$('smooth').addEventListener('input',e=>{smoothing=+e.target.value/100;$('smoothVal').textContent=e.target.value+'%';});
 
-$('sens').addEventListener('input', e => {
-  sensitivity = Number(e.target.value);
-  $('sensVal').textContent = sensitivity + ' μT';
-  redraw();
-});
-
-$('smooth').addEventListener('input', e => {
-  smoothing = Number(e.target.value) / 100;
-  $('smoothVal').textContent = e.target.value + '%';
-});
-
-function init() {
-  document.documentElement.style.background = 'transparent';
-  document.body.style.background = 'transparent';
-  resize();
-  startCamera();
-  startMagnetometer();
-}
-
-document.addEventListener('deviceready', init, { once: true });
-
-document.addEventListener('pause', () => {
-  if (window.MScanMagnetometer) window.MScanMagnetometer.stop(() => {}, () => {});
-}, false);
-
-document.addEventListener('resume', () => {
-  startMagnetometer();
-}, false);
+document.addEventListener('deviceready',()=>{
+ document.documentElement.style.background='transparent';
+ document.body.style.background='transparent';
+ resize(); startCam(); startMag();
+},{once:true});
 })();

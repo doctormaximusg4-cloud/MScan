@@ -1,15 +1,19 @@
 {
-  "name": "mscan",
-  "version": "0.1.0",
-  "private": true,
-  "description": "MScan - Magnetic Live Scanner",
+  "name": "com.mintsog.mscan.camera",
+  "version": "1.0.0",
+  "description": "Native Android live camera preview bridge for MScan",
   "cordova": {
+    "id": "com.mintsog.mscan.camera",
     "platforms": [
       "android"
-    ],
-    "plugins": {
-      "cordova-plugin-camera-preview": {},
-      "com.mintsog.mscan.magnetometer": {}
-    }
-  }
+    ]
+  },
+  "keywords": [
+    "cordova",
+    "android",
+    "camera",
+    "preview",
+    "mscan"
+  ],
+  "license": "MIT"
 }
