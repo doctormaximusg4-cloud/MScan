@@ -2,104 +2,257 @@
 'use strict';
 
 const $ = id => document.getElementById(id);
+
 const canvas = $('overlay');
 const ctx = canvas.getContext('2d');
 
 let baseline = null;
 let smoothB = null;
+
 let scanning = false;
 let frozen = false;
+
 let sensitivity = 10;
 let smoothing = 0.65;
-let points = [];
+
+/*
+  Κάτω από αυτή τη διαφορά θεωρούμε
+  ότι είναι φυσιολογικός θόρυβος.
+*/
+const DEAD_ZONE = 0.8;
 
 let cameraStarted = false;
 let sensorStarted = false;
 
+let lastDelta = 0;
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
 function updateStatus() {
+
   if (cameraStarted && sensorStarted) {
+
     $('state').textContent = 'CAM + MAG OK';
+
   } else if (cameraStarted) {
+
     $('state').textContent = 'CAM OK';
+
   } else if (sensorStarted) {
+
     $('state').textContent = 'MAG OK';
+
   } else {
+
     $('state').textContent = 'WAIT';
+
   }
 }
 
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
 function resize() {
-  const d = window.devicePixelRatio || 1;
 
-  canvas.width = innerWidth * d;
-  canvas.height = innerHeight * d;
+  const d =
+    window.devicePixelRatio || 1;
 
-  canvas.style.width = innerWidth + 'px';
-  canvas.style.height = innerHeight + 'px';
+  canvas.width =
+    innerWidth * d;
 
-  ctx.setTransform(d, 0, 0, d, 0, 0);
+  canvas.height =
+    innerHeight * d;
+
+  canvas.style.width =
+    innerWidth + 'px';
+
+  canvas.style.height =
+    innerHeight + 'px';
+
+  ctx.setTransform(
+    d,
+    0,
+    0,
+    d,
+    0,
+    0
+  );
 
   redraw();
 }
 
-window.addEventListener('resize', resize);
+window.addEventListener(
+  'resize',
+  resize
+);
 
-function magneticColor(delta, alpha) {
-  const t = Math.max(
+
+/* =========================================================
+   COLOR SCALE
+
+   negative ΔB  -> blue
+   neutral      -> green
+   positive ΔB  -> yellow/red
+========================================================= */
+
+function magneticColor(
+  delta,
+  alpha
+) {
+
+  let t =
+    delta /
+    Math.max(
+      1,
+      sensitivity
+    );
+
+  t = Math.max(
     -1,
-    Math.min(1, delta / Math.max(1, sensitivity))
+    Math.min(
+      1,
+      t
+    )
   );
 
   let hue;
 
   if (t < 0) {
-    const q = t + 1;
-    hue = 225 + (180 - 225) * q;
+
+    /*
+       -1 = blue
+        0 = green
+    */
+
+    hue =
+      220 +
+      (120 - 220) *
+      (t + 1);
+
   } else {
-    hue = 120 * (1 - t);
+
+    /*
+       0 = green
+       1 = red
+    */
+
+    hue =
+      120 *
+      (1 - t);
   }
 
   return `hsla(${hue},100%,50%,${alpha})`;
 }
 
-function drawBlob(p) {
-  const strength = Math.min(
-    1.8,
-    Math.abs(p.delta) / Math.max(1, sensitivity)
-  );
 
-  const radius = 52 + strength * 55;
+/* =========================================================
+   LIVE MAGNETIC BLOB
+========================================================= */
 
-  const g = ctx.createRadialGradient(
-    p.x,
-    p.y,
-    2,
-    p.x,
-    p.y,
-    radius
-  );
+function drawLiveBlob(delta) {
 
-  g.addColorStop(
+  ctx.clearRect(
     0,
-    magneticColor(p.delta, 0.72)
+    0,
+    innerWidth,
+    innerHeight
   );
 
-  g.addColorStop(
-    0.45,
-    magneticColor(p.delta, 0.35)
+  /*
+     Dead-zone.
+     Μικρές φυσιολογικές διακυμάνσεις
+     δεν δημιουργούν anomaly.
+  */
+
+  if (
+    Math.abs(delta) <
+    DEAD_ZONE
+  ) {
+    return;
+  }
+
+  const cx =
+    innerWidth / 2;
+
+  const cy =
+    innerHeight / 2;
+
+  const strength =
+    Math.min(
+      1,
+      Math.abs(delta) /
+      Math.max(
+        1,
+        sensitivity
+      )
+    );
+
+  /*
+     Όσο μεγαλύτερη η ανωμαλία,
+     τόσο μεγαλύτερος ο κύκλος.
+  */
+
+  const radius =
+    60 +
+    strength * 150;
+
+  const gradient =
+    ctx.createRadialGradient(
+
+      cx,
+      cy,
+      5,
+
+      cx,
+      cy,
+      radius
+    );
+
+  gradient.addColorStop(
+    0,
+    magneticColor(
+      delta,
+      0.80
+    )
   );
 
-  g.addColorStop(
+  gradient.addColorStop(
+    0.25,
+    magneticColor(
+      delta,
+      0.55
+    )
+  );
+
+  gradient.addColorStop(
+    0.55,
+    magneticColor(
+      delta,
+      0.25
+    )
+  );
+
+  gradient.addColorStop(
     1,
-    magneticColor(p.delta, 0)
+    magneticColor(
+      delta,
+      0
+    )
   );
 
-  ctx.fillStyle = g;
+  ctx.fillStyle =
+    gradient;
 
   ctx.beginPath();
+
   ctx.arc(
-    p.x,
-    p.y,
+    cx,
+    cy,
     radius,
     0,
     Math.PI * 2
@@ -108,41 +261,95 @@ function drawBlob(p) {
   ctx.fill();
 }
 
-function redraw() {
-  ctx.clearRect(
-    0,
-    0,
-    innerWidth,
-    innerHeight
-  );
 
-  points.forEach(drawBlob);
+/* =========================================================
+   REDRAW
+========================================================= */
+
+function redraw() {
+
+  if (
+    scanning &&
+    baseline !== null
+  ) {
+
+    drawLiveBlob(
+      lastDelta
+    );
+
+  } else {
+
+    ctx.clearRect(
+      0,
+      0,
+      innerWidth,
+      innerHeight
+    );
+  }
 }
 
+
+/* =========================================================
+   MAGNETOMETER
+========================================================= */
+
 function onMagneticReading(r) {
-  const x = Number(r.x) || 0;
-  const y = Number(r.y) || 0;
-  const z = Number(r.z) || 0;
+
+  const x =
+    Number(r.x) || 0;
+
+  const y =
+    Number(r.y) || 0;
+
+  const z =
+    Number(r.z) || 0;
 
   const total =
-    Number.isFinite(Number(r.magnitude))
+    Number.isFinite(
+      Number(r.magnitude)
+    )
+
       ? Number(r.magnitude)
+
       : Math.sqrt(
           x * x +
           y * y +
           z * z
         );
 
+
+  /*
+     Low-pass smoothing
+  */
+
   smoothB =
     smoothB === null
-      ? total
-      : smoothing * smoothB +
-        (1 - smoothing) * total;
 
-  const delta =
-    baseline === null
-      ? 0
-      : smoothB - baseline;
+      ? total
+
+      : smoothing *
+          smoothB +
+
+        (1 - smoothing) *
+          total;
+
+
+  let delta = 0;
+
+  if (baseline !== null) {
+
+    delta =
+      smoothB -
+      baseline;
+  }
+
+  lastDelta =
+    delta;
+
+
+  /* -------------------------
+     UI VALUES
+  ------------------------- */
 
   $('x').textContent =
     x.toFixed(1);
@@ -166,32 +373,43 @@ function onMagneticReading(r) {
       1
     );
 
-  sensorStarted = true;
+
+  sensorStarted =
+    true;
 
   updateStatus();
+
+
+  /*
+     Το overlay ανανεώνεται
+     μόνο όταν γίνεται scan.
+  */
 
   if (
     scanning &&
     !frozen &&
     baseline !== null
   ) {
-    points.push({
-      x: innerWidth / 2,
-      y: innerHeight / 2,
+
+    drawLiveBlob(
       delta
-    });
-
-    if (points.length > 220) {
-      points.shift();
-    }
-
-    redraw();
+    );
   }
 }
 
+
+/* =========================================================
+   START MAGNETOMETER
+========================================================= */
+
 function startMagnetometer() {
-  if (!window.MScanMagnetometer) {
-    sensorStarted = false;
+
+  if (
+    !window.MScanMagnetometer
+  ) {
+
+    sensorStarted =
+      false;
 
     updateStatus();
 
@@ -201,18 +419,21 @@ function startMagnetometer() {
     return;
   }
 
+
   window.MScanMagnetometer.start(
 
     onMagneticReading,
 
     err => {
 
-      sensorStarted = false;
+      sensorStarted =
+        false;
 
       updateStatus();
 
       $('message').textContent =
-        'MAG ERROR: ' + err;
+        'MAG ERROR: ' +
+        err;
     },
 
     {
@@ -221,10 +442,19 @@ function startMagnetometer() {
   );
 }
 
-function startCamera() {
-  if (!window.MScanCamera) {
 
-    cameraStarted = false;
+/* =========================================================
+   CAMERA
+========================================================= */
+
+function startCamera() {
+
+  if (
+    !window.MScanCamera
+  ) {
+
+    cameraStarted =
+      false;
 
     updateStatus();
 
@@ -234,158 +464,298 @@ function startCamera() {
     return;
   }
 
+
   window.MScanCamera.start(
 
-    msg => {
+    () => {
 
-      cameraStarted = true;
+      cameraStarted =
+        true;
 
       updateStatus();
 
       $('message').textContent =
         sensorStarted
+
           ? 'Camera + magnetometer ready. Press CALIBRATE.'
+
           : 'Camera ready. Waiting for magnetometer…';
     },
 
     err => {
 
-      cameraStarted = false;
+      cameraStarted =
+        false;
 
       updateStatus();
 
       $('message').textContent =
-        'CAM ERROR: ' + err;
+        'CAM ERROR: ' +
+        err;
     }
   );
 }
 
+
+/* =========================================================
+   CALIBRATION
+
+   Αντί για μία μόνο μέτρηση,
+   παίρνουμε περίπου 1.5 sec
+   από πραγματικές μετρήσεις.
+========================================================= */
+
 function calibrate() {
 
-  if (smoothB === null) {
+  if (
+    smoothB === null
+  ) {
 
     $('message').textContent =
-      'Waiting for real magnetometer readings…';
+      'Waiting for magnetometer readings…';
 
     return;
   }
 
-  baseline = smoothB;
-
-  points = [];
-
-  redraw();
 
   $('message').textContent =
-    'Baseline set: ' +
-    baseline.toFixed(1) +
-    ' μT';
-}
+    'CALIBRATING… Keep phone still.';
 
-$('calibrate')
-  .addEventListener(
-    'click',
-    calibrate
-  );
 
-$('scan')
-  .addEventListener(
-    'click',
+  const samples = [];
+
+  const timer =
+    setInterval(
+      () => {
+
+        if (
+          smoothB !== null
+        ) {
+
+          samples.push(
+            smoothB
+          );
+        }
+
+      },
+      50
+    );
+
+
+  setTimeout(
     () => {
 
-      if (baseline === null) {
+      clearInterval(
+        timer
+      );
+
+
+      if (
+        samples.length === 0
+      ) {
 
         $('message').textContent =
-          'Calibrate first.';
+          'Calibration failed.';
 
         return;
       }
 
-      scanning = !scanning;
 
-      frozen = false;
+      baseline =
+        samples.reduce(
+          (a, b) =>
+            a + b,
+          0
+        ) /
+        samples.length;
 
-      $('scan').textContent =
-        scanning
-          ? 'STOP SCAN'
-          : 'START SCAN';
 
-      $('freeze').textContent =
-        'FREEZE';
+      lastDelta =
+        0;
+
+
+      ctx.clearRect(
+        0,
+        0,
+        innerWidth,
+        innerHeight
+      );
+
 
       $('message').textContent =
-        scanning
-          ? 'Scanning… move the phone slowly over the target.'
-          : 'Scan stopped.';
-    }
+        'Baseline: ' +
+        baseline.toFixed(1) +
+        ' μT — Ready to scan.';
+
+    },
+    1500
   );
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+$('calibrate')
+.addEventListener(
+  'click',
+  calibrate
+);
+
+
+$('scan')
+.addEventListener(
+  'click',
+  () => {
+
+    if (
+      baseline === null
+    ) {
+
+      $('message').textContent =
+        'Calibrate first.';
+
+      return;
+    }
+
+
+    scanning =
+      !scanning;
+
+    frozen =
+      false;
+
+
+    $('scan').textContent =
+      scanning
+
+        ? 'STOP SCAN'
+
+        : 'START SCAN';
+
+
+    $('freeze').textContent =
+      'FREEZE';
+
+
+    if (scanning) {
+
+      $('message').textContent =
+        'LIVE SCAN — move phone slowly over target.';
+
+    } else {
+
+      ctx.clearRect(
+        0,
+        0,
+        innerWidth,
+        innerHeight
+      );
+
+      $('message').textContent =
+        'Scan stopped.';
+    }
+  }
+);
+
 
 $('freeze')
-  .addEventListener(
-    'click',
-    () => {
+.addEventListener(
+  'click',
+  () => {
 
-      frozen = !frozen;
+    frozen =
+      !frozen;
 
-      $('freeze').textContent =
-        frozen
-          ? 'RESUME'
-          : 'FREEZE';
 
-      $('message').textContent =
-        frozen
-          ? 'Overlay frozen.'
-          : 'Overlay resumed.';
-    }
-  );
+    $('freeze').textContent =
+      frozen
+
+        ? 'RESUME'
+
+        : 'FREEZE';
+
+
+    $('message').textContent =
+      frozen
+
+        ? 'Magnetic overlay frozen.'
+
+        : 'Live overlay resumed.';
+  }
+);
+
 
 $('clear')
-  .addEventListener(
-    'click',
-    () => {
+.addEventListener(
+  'click',
+  () => {
 
-      points = [];
+    ctx.clearRect(
+      0,
+      0,
+      innerWidth,
+      innerHeight
+    );
 
-      redraw();
+    lastDelta =
+      0;
 
-      $('message').textContent =
-        'Overlay cleared.';
-    }
-  );
+    $('message').textContent =
+      'Overlay cleared.';
+  }
+);
+
+
+/* =========================================================
+   SENSITIVITY
+========================================================= */
 
 $('sens')
-  .addEventListener(
-    'input',
-    e => {
+.addEventListener(
+  'input',
+  e => {
 
-      sensitivity =
-        Number(
-          e.target.value
-        );
+    sensitivity =
+      Number(
+        e.target.value
+      );
 
-      $('sensVal').textContent =
-        sensitivity +
-        ' μT';
+    $('sensVal').textContent =
+      sensitivity +
+      ' μT';
 
-      redraw();
-    }
-  );
+    redraw();
+  }
+);
+
+
+/* =========================================================
+   SMOOTHING
+========================================================= */
 
 $('smooth')
-  .addEventListener(
-    'input',
-    e => {
+.addEventListener(
+  'input',
+  e => {
 
-      smoothing =
-        Number(
-          e.target.value
-        ) / 100;
+    smoothing =
+      Number(
+        e.target.value
+      ) /
+      100;
 
-      $('smoothVal').textContent =
-        e.target.value +
-        '%';
-    }
-  );
+    $('smoothVal').textContent =
+      e.target.value +
+      '%';
+  }
+);
+
+
+/* =========================================================
+   INIT
+========================================================= */
 
 function init() {
 
@@ -402,6 +772,7 @@ function init() {
   startMagnetometer();
 }
 
+
 document.addEventListener(
   'deviceready',
   init,
@@ -409,6 +780,11 @@ document.addEventListener(
     once: true
   }
 );
+
+
+/* =========================================================
+   APP PAUSE / RESUME
+========================================================= */
 
 document.addEventListener(
   'pause',
@@ -427,6 +803,7 @@ document.addEventListener(
   },
   false
 );
+
 
 document.addEventListener(
   'resume',
